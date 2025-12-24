@@ -46,7 +46,11 @@ func main() {
 	maxArea := 0
 	for i := 0; i < len(floor.RedTiles); i++ {
 		for j := i + 1; j < len(floor.RedTiles); j++ {
-			area := (floor.RedTiles[i].X + 1 - floor.RedTiles[j].X) * (floor.RedTiles[i].Y + 1 - floor.RedTiles[j].Y)
+			dx := (floor.RedTiles[i].X - floor.RedTiles[j].X)
+			dy := (floor.RedTiles[i].Y - floor.RedTiles[j].Y)
+			dx = max(dx, -dx) + 1
+			dy = max(dy, -dy) + 1
+			area := dx * dy
 			maxArea = max(maxArea, max(area, -area))
 		}
 	}
@@ -61,82 +65,54 @@ func main() {
 		}
 	}
 
-	// window := 15
-	// for i := range window {
-	// 	fmt.Println(string(field[i][0:window]))
-	// }
-
 	for i := range floor.RedTiles {
 		current := floor.RedTiles[i]
 		next := floor.RedTiles[(i+1)%len(floor.RedTiles)]
-		// next2 := floor.RedTiles[(i+2)%len(floor.RedTiles)]
 
-		dx := (next.X - current.X)
-		// dx2 := (next2.X - next.X)
 		dy := (next.Y - current.Y)
-		// dy2 := (next2.Y - next.Y)
 
-		if dy > 0 { //&& dx2 < 0 {
+		if dy > 0 {
 			// flip left
 			for y := min(current.Y, next.Y); y <= max(current.Y, next.Y); y++ {
-				if field[y][current.X] == '-' {
-					field[y][current.X] = '<'
-				}
+				field[y][current.X] = '<'
 			}
 
 		} else if dy < 0 {
 			// flip right
 			for y := min(current.Y, next.Y); y <= max(current.Y, next.Y); y++ {
-				// if field[y][current.X] == '-' {
 				field[y][current.X] = '>'
-				// }
 			}
-		} else if dx != 0 {
-			for x := min(current.X, next.X); x <= max(current.X, next.X); x++ {
-				if field[current.Y][x] == '-' {
-					// field[current.Y][x] = 'X'
-				}
-
-			}
-
 		}
 
-		// pp.Println(current, next)
-		// for i := range window {
-		// 	fmt.Println(string(field[i][0:window]))
-		// }
 	}
 
 	// paint
-
 	intervals := [100000][]Interval{}
 	for y := 0; y < N; y++ {
 		in := false
 		from := 0
 		for x := 0; x < N; x++ {
+			// Following assumes clock-wise polygon orientation. 
+			// To generalize, non-zero winding number rule could be used instead of '<' and '>', where '>' and '<' are +-1.
+			// https://www.tutorialspoint.com/computer_graphics/polygon_filling_algorithm.htm
 			if field[y][x] == '<' && (x == N-1 || field[y][x+1] == '-') {
 				in = false
 				intervals[y] = append(intervals[y], Interval{from, x})
-				field[y][x] = 'X'
 			} else if field[y][x] == '>' && !in {
 				in = true
 				from = x
 			}
-
-			if in {
-				field[y][x] = 'X'
-			}
 		}
 	}
-	// for i := range window {
-	// 	fmt.Println(string(field[i][0:window]))
-	// }
 
 	maxArea = 0
 	for i := 0; i < len(floor.RedTiles); i++ {
 		for j := i + 1; j < len(floor.RedTiles); j++ {
-			area := (floor.RedTiles[i].X + 1 - floor.RedTiles[j].X) * (floor.RedTiles[i].Y + 1 - floor.RedTiles[j].Y)
-			area = max(area, -area)
+			dx := (floor.RedTiles[i].X - floor.RedTiles[j].X)
+			dy := (floor.RedTiles[i].Y - floor.RedTiles[j].Y)
+			dx = max(dx, -dx) + 1
+			dy = max(dy, -dy) + 1
+			area := dx * dy
 			if area < maxArea {
 				continue
 			}
@@ -147,20 +123,11 @@ func main() {
 			y0 := min(floor.RedTiles[i].Y, floor.RedTiles[j].Y)
 			y1 := max(floor.RedTiles[i].Y, floor.RedTiles[j].Y)
 			for y := y0; y <= y1; y++ {
-				for x := x0; x <= x1; x++ {
-					covered = covered && field[y][x] != '-'
-					if !covered {
-						break
-					}
+				intervalFound := false
+				for _, interval := range intervals[y] {
+					intervalFound = intervalFound || (interval.A <= x0 && interval.B >= x1)
 				}
-				if !covered {
-					break
-				}
-				// intervalFound := false
-				// for _, interval := range intervals[y] {
-				// 	intervalFound = intervalFound || (interval.A <= x0 && interval.B >= x1)
-				// }
-				// covered = covered && intervalFound
+				covered = covered && intervalFound
 			}
 
 			if covered {
@@ -170,10 +137,4 @@ func main() {
 	}
 
 	fmt.Println("Part 2:", maxArea)
-	// 1474444748 is too low
-	// 138584360 is too low
-	// 314679376
-
-	// pp.Println(intervals[0:15])
-
 }
